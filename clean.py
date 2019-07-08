@@ -106,6 +106,9 @@ def fix_electricity(ds):
     house_parent = ds[(ds.parentesco1 == 1) & ~(ds.idhogar.isin(list_houses_issue))]
     return ds.apply(lambda x: electricity_mode(x, house_parent, list_houses_issue), axis=1)
 
+def fix_v18q1(ds):
+    ds.loc[ds.v18q1.isna(), 'v18q1'] = 0
+    return ds
 
 costo_oportunidad_check_columns = [
     {"columns": ["region_central", "region_chorotega", "region_pacifico_central", "region_brunca",
@@ -151,13 +154,14 @@ def clean(ds):
     ds.drop(columns=["edjefe", "edjefa", "dependency", "meaneduc"], inplace=True)
 
     # Step 2.2
-    ds.drop(columns=["v18q1", "rez_esc"], inplace=True)
+    ds.drop(columns=["rez_esc"], inplace=True)
 
     # Step 2.5
     ds.drop(columns=["hhsize", 'r4t1', 'r4t2', 'r4t3', 'r4m3', 'r4h3', "hogar_total"], inplace=True)
 
     ds = fix_techo(ds)
     ds = fix_electricity(ds)
+    ds = fix_v18q1() 
 
     hogares = ds[["parentesco1", "idhogar"]].groupby(['idhogar']).sum()
     array_hogares = hogares[hogares.parentesco1 != 1].index.values
