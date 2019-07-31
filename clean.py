@@ -161,7 +161,7 @@ def clean(ds):
 
     ds = fix_techo(ds)
     ds = fix_electricity(ds)
-    ds = fix_v18q1() 
+    ds = fix_v18q1(ds) 
 
     hogares = ds[["parentesco1", "idhogar"]].groupby(['idhogar']).sum()
     array_hogares = hogares[hogares.parentesco1 != 1].index.values
