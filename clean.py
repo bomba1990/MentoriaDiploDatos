@@ -129,8 +129,6 @@ costo_oportunidad_check_columns = [
 
 def get_costo_de_oportunidad(input, ds_paid_rent):
     if input.monthly_rent > 0:
-        input["costo_oportunidad"] = input.monthly_rent
-        input["rent"] = 1
         return input
     for n in range(len(costo_oportunidad_check_columns)):
         filter_data = {}
@@ -141,8 +139,7 @@ def get_costo_de_oportunidad(input, ds_paid_rent):
         filtered_ds = ds_paid_rent.loc[
             (ds_paid_rent[list(filter_data)] == pd.Series(filter_data)).all(axis=1)]
         if filtered_ds.shape[0] > 0:
-            input["costo_oportunidad"] = filtered_ds.monthly_rent.mean()
-            input["rent"] = 0
+            input["monthly_rent"] = filtered_ds.monthly_rent.mean()
             return input
 
 
@@ -161,7 +158,7 @@ def clean(ds):
 
     ds = fix_techo(ds)
     ds = fix_electricity(ds)
-    ds = fix_v18q1(ds) 
+    ds = fix_v18q1(ds)
 
     hogares = ds[["parentesco1", "idhogar"]].groupby(['idhogar']).sum()
     array_hogares = hogares[hogares.parentesco1 != 1].index.values
@@ -195,6 +192,8 @@ def clean(ds):
 
     return ds
 
+def clean_datadrame(ds):
+    return clean(ds)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
