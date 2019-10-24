@@ -1,5 +1,6 @@
 import sys, os
 import pandas as pd
+import numpy as np
 
 rename_col_dict = {
     'area1': 'zona_urbana',
@@ -106,9 +107,11 @@ def fix_electricity(ds):
     house_parent = ds[(ds.parentesco1 == 1) & ~(ds.idhogar.isin(list_houses_issue))]
     return ds.apply(lambda x: electricity_mode(x, house_parent, list_houses_issue), axis=1)
 
+
 def fix_v18q1(ds):
     ds.loc[ds.v18q1.isna(), 'v18q1'] = 0
     return ds
+
 
 costo_oportunidad_check_columns = [
     {"columns": ["region_central", "region_chorotega", "region_pacifico_central", "region_brunca",
@@ -143,13 +146,39 @@ def get_costo_de_oportunidad(input, ds_paid_rent):
             return input
 
 
-def clean(ds):
+def get_educacion_jefe(x, _ds):
+    x['edu_jefe'] = (_ds.loc[(_ds['parentesco1'] == 1) & (
+                _ds['idhogar'] == x['idhogar']), 'escolari'].item()) ** 2
+    return x
+
+
+def add_synthetic_features(_ds):
+    _ds['tech_individuo'] = (_ds['mobilephone'] + _ds['v18q']) ** 2
+    _ds['tech_hogar'] = (_ds['television'] + _ds['qmobilephone'] +
+                         _ds['computer'] + _ds['v18q1']) ** 2
+    _ds['monthly_rent_log'] = np.log(_ds['monthly_rent'])
+    _ds = _ds.apply(lambda x: get_educacion_jefe(x, _ds), axis=1)
+    _ds['bedrooms_to_rooms'] = _ds['bedrooms'] / _ds['rooms']
+    _ds['rent_to_rooms'] = _ds['monthly_rent'] / _ds['rooms']
+    _ds['SQBage'] = _ds['age'] ** 2
+    _ds['SQBhogar_total'] = (_ds['hogar_nin'] + _ds['hogar_mayor'] + _ds['hogar_adul']) ** 2
+    _ds['child_dependency'] = _ds['hogar_nin'] / (
+                _ds['hogar_nin'] + _ds['hogar_mayor'] + _ds['hogar_adul'])
+    _ds['rooms_per_person'] = (_ds['hogar_nin'] + _ds['hogar_mayor'] + _ds['hogar_adul']) / (
+    _ds['rooms'])
+    _ds['female_weight'] = ((_ds['r4m1'] + _ds['r4m2']) / _ds['tamhog']) ** 2
+    _ds['male_weight'] = ((_ds['r4h1'] + _ds['r4h2']) / _ds['tamhog']) ** 2
+    return _ds
+
+
+def clean(ds, drop_hogares_miss=True):
     # Step 1.1
     _calc_feat = ds.loc[:, 'SQBescolari':'agesq'].columns
     print('Columnas eliminadas: ', _calc_feat.values)
     ds.drop(columns=_calc_feat, inplace=True)
     ds.drop(columns=["edjefe", "edjefa", "dependency", "meaneduc"], inplace=True)
-
+    print(
+        "Columnas eliminadas: edjefe, edjefa, dependency, meaneduc, rez_esc, hhsize, r4t1, r4t2, r4t3,r4m3, r4h3, hogar_total")
     # Step 2.2
     ds.drop(columns=["rez_esc"], inplace=True)
 
@@ -160,13 +189,14 @@ def clean(ds):
     ds = fix_electricity(ds)
     ds = fix_v18q1(ds)
 
-    hogares = ds[["parentesco1", "idhogar"]].groupby(['idhogar']).sum()
-    array_hogares = hogares[hogares.parentesco1 != 1].index.values
-    ds = ds[ds.idhogar.isin(list(array_hogares)) == False]
+    if drop_hogares_miss:
+        hogares = ds[["parentesco1", "idhogar"]].groupby(['idhogar']).sum()
+        array_hogares = hogares[hogares.parentesco1 != 1].index.values
+        ds = ds[ds.idhogar.isin(list(array_hogares)) == False]
 
-    # Step 2.6
-    v2a1_max = ds.v2a1.std() * 3 + ds.v2a1.mean()
-    ds = ds[(ds.v2a1 < v2a1_max) | (ds.v2a1.isnull())]
+        # Step 2.6
+        v2a1_max = ds.v2a1.std() * 3 + ds.v2a1.mean()
+        ds = ds[(ds.v2a1 < v2a1_max) | (ds.v2a1.isnull())]
 
     # Step 3.3
     rename_col_dict = {
@@ -185,6 +215,9 @@ def clean(ds):
     ds_paid_rent = ds[(ds.monthly_rent > 0) & (ds.parentesco1 == 1)]
     ds = ds.apply(lambda x: get_costo_de_oportunidad(x, ds_paid_rent), axis=1)
 
+    # step 6 add new feautures
+    add_synthetic_features(ds)
+
     cat = len(ds.select_dtypes(include=['object']).columns)
     num = len(ds.select_dtypes(include=['int64', 'float64']).columns)
     print('Total Features: ', cat, 'objetos', '+',
@@ -192,8 +225,10 @@ def clean(ds):
 
     return ds
 
+
 def clean_datadrame(ds):
     return clean(ds)
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
