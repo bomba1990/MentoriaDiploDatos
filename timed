@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+
+/usr/bin/time --format "Memory usage: %MKB\tTime: %e seconds" "$@"
+
+# %e Elapsed real (wall clock) time used by the process, in seconds.
+# %M Maximum resident set size of the process in Kilobytes.

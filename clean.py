@@ -178,8 +178,11 @@ def add_synthetic_features(_ds):
     _ds["dependency"] = 0
     for hogar in _ds.idhogar.unique():
         _ds.loc[(_ds.idhogar==hogar), "overcrowding" ] = _ds[ (_ds.idhogar==hogar)].shape[0] / _ds[ (_ds.idhogar==hogar)].iloc[0].bedrooms
-        _ds.loc[(_ds.idhogar==hogar), "dependency" ] = _ds[ (_ds.idhogar==hogar)].shape[0] / _ds[ (_ds.idhogar==hogar)].iloc[0].work
         _ds.loc[(_ds.idhogar==hogar), "work" ] = _ds[ (_ds.idhogar==hogar) & (_ds.age<65) & (_ds.age > 18) ].shape[0]
+        if _ds[ (_ds.idhogar==hogar)].iloc[0].work > 0:
+            _ds.loc[(_ds.idhogar==hogar), "dependency" ] = _ds[ (_ds.idhogar==hogar)].shape[0] / _ds[ (_ds.idhogar==hogar)].iloc[0].work
+        else:
+            _ds.loc[(_ds.idhogar==hogar), "dependency" ] = 10
         try:
             _ds.loc[(_ds.idhogar==hogar), "edjefe" ] = _ds[ (_ds.idhogar==hogar) & (_ds.parentesco1==1)  & (_ds.male==1) ].iloc[0].age
         except:

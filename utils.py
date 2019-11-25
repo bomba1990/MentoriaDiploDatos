@@ -41,7 +41,7 @@ def drop_multicollinearity(df, show=False):
                   ['public', 'planpri', 'noelec', 'coopele'],
                   ['sanitario1', 'sanitario2', 'sanitario3', 'sanitario5', 'sanitario6'],
                   ['energcocinar1', 'energcocinar2', 'energcocinar3', 'energcocinar4'],
-                  ['elimbasu1', 'elimbasu2', 'elimbasu3', 'elimbasu4', 'elimbasu5', 'elimbasu6'],
+                  ['elimbasu1', 'elimbasu2', 'elimbasu3', 'elimbasu4', 'elimbasu6'],
                   ['epared1', 'epared2', 'epared3'],
                   ['etecho1', 'etecho2', 'etecho3'],
                   ['eviv1', 'eviv2', 'eviv3'],
